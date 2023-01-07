@@ -55,7 +55,7 @@ def get_rock_points_list(puzzle_input):
                 index += 1
     rock_structure_points_list = delete_duplicates(rock_structure_points_list)
     sorted_grid = sorted(rock_structure_points_list, key=lambda x: (x.y, x.x))
-    return rock_structure_points_list
+    return sorted_grid
 
 
 
@@ -116,39 +116,72 @@ def get_max_x(rock_structure_points_list):
     return sort[-1].x
 
 
+def delete_unreachable_cords(usable_coordinates: List[Cords], for_visualization: List[Cords]):
+    good_cords = []
+    for usable_cord in usable_coordinates:
+        needed_cord = True
+        if get_coordinate_material(for_visualization, x=usable_cord.x, y=usable_cord.y-1) is not Material.AIR:
+            if get_coordinate_material(for_visualization, x=usable_cord.x-1, y=usable_cord.y) is not Material.AIR and \
+               get_coordinate_material(for_visualization, x=usable_cord.x+1, y=usable_cord.y) is not Material.AIR:
+                if get_coordinate_material(for_visualization, x=usable_cord.x-1, y=usable_cord.y-1) is not Material.AIR and \
+                   get_coordinate_material(for_visualization, x=usable_cord.x+1, y=usable_cord.y-1) is not Material.AIR:
+                    if get_coordinate_material(for_visualization, x=usable_cord.x-2, y=usable_cord.y) is not Material.AIR and \
+                       get_coordinate_material(for_visualization, x=usable_cord.x+2, y=usable_cord.y) is not Material.AIR:
+                        needed_cord = False
+        if needed_cord:
+            good_cords.append(usable_cord)
+    return good_cords
+
 def add_falling_sand(whole_sorted_grid):
+    coordinates_for_sand = whole_sorted_grid
+    coordinates_for_sand = delete_unreachable_cords(coordinates_for_sand, whole_sorted_grid)
     end = False
+    sand_nr = 0
     while not end:
-        index_to_change = 0
+        sand_nr += 1
+        if sand_nr % 50 == 0:
+            coordinates_for_sand = delete_unreachable_cords(coordinates_for_sand, whole_sorted_grid)
         sand_cord_rn = Cords(x=500, y=0, material=Material.SAND)
-        while index_to_change == 0:
-            material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x, y=sand_cord_rn.y + 1)
+        while True:
+            material_under = get_coordinate_material(coordinates_for_sand, x=sand_cord_rn.x, y=sand_cord_rn.y + 1)
             if material_under is Material.AIR:
                 sand_cord_rn.y = sand_cord_rn.y + 1
             if material_under is Material.ROCK or material_under is Material.SAND:
-                material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x - 1, y=sand_cord_rn.y + 1)
+                material_under = get_coordinate_material(coordinates_for_sand, x=sand_cord_rn.x - 1, y=sand_cord_rn.y + 1)
                 if material_under is Material.AIR:
                     sand_cord_rn.x = sand_cord_rn.x - 1
                     sand_cord_rn.y = sand_cord_rn.y + 1
                 if material_under is Material.ROCK or material_under is Material.SAND:
-                    material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x + 1, y=sand_cord_rn.y + 1)
+                    material_under = get_coordinate_material(coordinates_for_sand, x=sand_cord_rn.x + 1, y=sand_cord_rn.y + 1)
                     if material_under is Material.AIR:
                         sand_cord_rn.x = sand_cord_rn.x + 1
                         sand_cord_rn.y = sand_cord_rn.y + 1
                     if material_under is Material.ROCK or material_under is Material.SAND:
                         whole_sorted_grid.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
+                        coordinates_for_sand.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
                         break
             if sand_cord_rn.y > get_max_y(whole_sorted_grid):
                 end = True
                 break
+    sand_sum = 0
+    for cord in coordinates_for_sand:
+        if cord.material is not Material.AIR:
+            sand_sum += 1
+    print("without dupes:", sand_sum)
+    print_out_map(coordinates_for_sand)
     return whole_sorted_grid
 
 
 def get_part_one_answer(puzzle_input):
     whole_sorted_grid = get_rock_points_list(puzzle_input)
-    print_out_map(whole_sorted_grid)
+    # print_out_map(whole_sorted_grid)
     whole_sorted_grid = add_falling_sand(whole_sorted_grid)
     print_out_map(whole_sorted_grid)
+    sand_sum = 0
+    for cord in whole_sorted_grid:
+        if cord.material is not Material.AIR:
+            sand_sum += 1
+    print("noraml", sand_sum)
     sand_count = 0
     for cord in whole_sorted_grid:
         if cord.material is Material.SAND:
