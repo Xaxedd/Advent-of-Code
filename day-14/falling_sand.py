@@ -9,7 +9,7 @@ class Material(Enum):
     SAND = 2
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Cords:
     x: int
     y: int
@@ -27,7 +27,7 @@ def to_cords(x):
 
 
 def get_rock_points_list(puzzle_input):
-    rock_structure_points_list = []
+    rock_structure_points_list = set()
     for line in puzzle_input:
         line = line.strip()
         starting_points = line.split(" -> ")
@@ -40,22 +40,22 @@ def get_rock_points_list(puzzle_input):
                 if start_cords.x == ending_cords.x:
                     if start_cords.y >= ending_cords.y:
                         for i in range(ending_cords.y, start_cords.y + 1):
-                            rock_structure_points_list.append(Cords(x=start_cords.x, y=i, material=Material.ROCK))
+                            rock_structure_points_list.add(Cords(x=start_cords.x, y=i, material=Material.ROCK))
                     else:
                         for i in range(start_cords.y, ending_cords.y + 1):
-                            rock_structure_points_list.append(Cords(x=start_cords.x, y=i, material=Material.ROCK))
+                            rock_structure_points_list.add(Cords(x=start_cords.x, y=i, material=Material.ROCK))
 
                 if start_cords.y == ending_cords.y:
                     if start_cords.x >= ending_cords.x:
                         for i in range(ending_cords.x, start_cords.x + 1):
-                            rock_structure_points_list.append(Cords(x=i, y=start_cords.y, material=Material.ROCK))
+                            rock_structure_points_list.add(Cords(x=i, y=start_cords.y, material=Material.ROCK))
                     else:
                         for i in range(start_cords.x, ending_cords.x + 1):
-                            rock_structure_points_list.append(Cords(x=i, y=start_cords.y, material=Material.ROCK))
+                            rock_structure_points_list.add(Cords(x=i, y=start_cords.y, material=Material.ROCK))
                 index += 1
-    rock_structure_points_list = delete_duplicates(rock_structure_points_list)
-    sorted_grid = sorted(rock_structure_points_list, key=lambda x: (x.y, x.x))
-    return sorted_grid
+    # rock_structure_points_list = delete_duplicates(rock_structure_points_list)
+    # sorted_grid = sorted(rock_structure_points_list, key=lambda x: (x.y, x.x))
+    return rock_structure_points_list
 
 
 
@@ -72,6 +72,7 @@ def delete_duplicates(rock_list: List[Cords]):
 
 
 def print_out_map(sorted_grid: List[Cords]):
+    sorted_grid = sorted(list(sorted_grid), key=lambda x: (x.y, x.x))
     all_rows = []
     min_x = get_min_x(sorted_grid)
     max_x = get_max_x(sorted_grid)
@@ -94,7 +95,7 @@ def print_out_map(sorted_grid: List[Cords]):
         print(row)
 
 
-def get_coordinate_material(grid: List[Cords], x: int, y: int):
+def get_coordinate_material(grid, x: int, y: int):
     for cord in grid:
         if cord.x == x and cord.y == y:
             return cord.material
@@ -116,8 +117,8 @@ def get_max_x(rock_structure_points_list):
     return sort[-1].x
 
 
-def delete_unreachable_cords(usable_coordinates: List[Cords], for_visualization: List[Cords]):
-    good_cords = []
+def delete_unreachable_cords(usable_coordinates, for_visualization):
+    good_cords = set()
     for usable_cord in usable_coordinates:
         needed_cord = True
         if get_coordinate_material(for_visualization, x=usable_cord.x, y=usable_cord.y-1) is not Material.AIR:
@@ -129,10 +130,11 @@ def delete_unreachable_cords(usable_coordinates: List[Cords], for_visualization:
                        get_coordinate_material(for_visualization, x=usable_cord.x+2, y=usable_cord.y) is not Material.AIR:
                         needed_cord = False
         if needed_cord:
-            good_cords.append(usable_cord)
+            good_cords.add(usable_cord)
     return good_cords
 
-def add_falling_sand(whole_sorted_grid):
+
+def add_falling_sand(whole_sorted_grid: set):
     coordinates_for_sand = whole_sorted_grid
     coordinates_for_sand = delete_unreachable_cords(coordinates_for_sand, whole_sorted_grid)
     end = False
@@ -157,8 +159,8 @@ def add_falling_sand(whole_sorted_grid):
                         sand_cord_rn.x = sand_cord_rn.x + 1
                         sand_cord_rn.y = sand_cord_rn.y + 1
                     if material_under is Material.ROCK or material_under is Material.SAND:
-                        whole_sorted_grid.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
-                        coordinates_for_sand.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
+                        whole_sorted_grid.add(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
+                        coordinates_for_sand.add(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
                         break
             if sand_cord_rn.y > get_max_y(whole_sorted_grid):
                 end = True
