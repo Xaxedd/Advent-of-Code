@@ -42,17 +42,25 @@ def get_rock_points_list(puzzle_input):
                 if start_cords.x == ending_cords.x:
                     if start_cords.y >= ending_cords.y:
                         for i in range(ending_cords.y, start_cords.y + 1):
+                            if i > 60:
+                                continue
                             rock_structure_points_list.append(Cords(x=start_cords.x, y=i, material=Material.ROCK))
                     else:
                         for i in range(start_cords.y, ending_cords.y + 1):
+                            if i > 60:
+                                continue
                             rock_structure_points_list.append(Cords(x=start_cords.x, y=i, material=Material.ROCK))
 
                 if start_cords.y == ending_cords.y:
                     if start_cords.x >= ending_cords.x:
                         for i in range(ending_cords.x, start_cords.x + 1):
+                            if start_cords.y > 60:
+                                continue
                             rock_structure_points_list.append(Cords(x=i, y=start_cords.y, material=Material.ROCK))
                     else:
                         for i in range(start_cords.x, ending_cords.x + 1):
+                            if start_cords.y > 60:
+                                continue
                             rock_structure_points_list.append(Cords(x=i, y=start_cords.y, material=Material.ROCK))
                 index += 1
     rock_structure_points_list = delete_duplicates(rock_structure_points_list)
@@ -73,7 +81,7 @@ def delete_duplicates(rock_list: List[Cords]):
     return list(map(to_cords, stringified))
 
 
-def print_out_map(sorted_grid: List[Cords], sand_cords_rn: Cords):
+def print_out_map(sorted_grid: List[Cords], sand_cords_list: List[Cords]):
     all_rows = []
     min_x = get_min_x(sorted_grid)
     max_x = get_max_x(sorted_grid)
@@ -89,9 +97,10 @@ def print_out_map(sorted_grid: List[Cords], sand_cords_rn: Cords):
                     elif structure.material is Material.SAND:
                         row += "o"
                     found = True
-            if sand_cords_rn.y == i and sand_cords_rn.x == j:
-                row += "o"
-                found = True
+            for sand_cord in sand_cords_list:
+                if sand_cord.y == i and sand_cord.x == j:
+                    row += "o"
+                    found = True
             if not found:
                 row += "."
         all_rows.append(row)
@@ -122,41 +131,50 @@ def get_max_x(rock_structure_points_list):
 
 def add_falling_sand(stdscr, whole_sorted_grid):
     end = False
+    falling_sand_list = []
+    iteration = 0
+    # sand_cord_rn = Cords(x=500, y=0, material=Material.SAND)
     while not end:
-        index_to_change = 0
-        sand_cord_rn = Cords(x=500, y=0, material=Material.SAND)
-        while index_to_change == 0:
-            # stdscr.addstr(amogus)
-            long = ""
-            rows = print_out_map(whole_sorted_grid, sand_cord_rn)
-            stdscr.clear()
-            for row in rows:
-                stdscr.addstr(row+"\n")
-            curses.delay_output(50)
-            stdscr.refresh()
-            # stdscr.addstr(long)
-            # stdscr.refresh()
-            time.sleep(0.01)
+        iteration += 1
+        print_out_map_to_terminal(stdscr, whole_sorted_grid, falling_sand_list)
+
+        if iteration % 4 == 0:
+            falling_sand_list.append(Cords(x=500, y=0, material=Material.SAND))
+
+        sand_index = 0
+        while sand_index < len(falling_sand_list):
+            sand_cord_rn = falling_sand_list[sand_index]
             material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x, y=sand_cord_rn.y + 1)
             if material_under is Material.AIR:
                 sand_cord_rn.y = sand_cord_rn.y + 1
-            if material_under is Material.ROCK or material_under is Material.SAND:
+            elif material_under is Material.ROCK or material_under is Material.SAND:
                 material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x - 1, y=sand_cord_rn.y + 1)
                 if material_under is Material.AIR:
                     sand_cord_rn.x = sand_cord_rn.x - 1
                     sand_cord_rn.y = sand_cord_rn.y + 1
-                if material_under is Material.ROCK or material_under is Material.SAND:
+                elif material_under is Material.ROCK or material_under is Material.SAND:
                     material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x + 1, y=sand_cord_rn.y + 1)
                     if material_under is Material.AIR:
                         sand_cord_rn.x = sand_cord_rn.x + 1
                         sand_cord_rn.y = sand_cord_rn.y + 1
-                    if material_under is Material.ROCK or material_under is Material.SAND:
+                    elif material_under is Material.ROCK or material_under is Material.SAND:
                         whole_sorted_grid.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
+                        falling_sand_list.pop(sand_index)
+                        sand_index -= 1
                         break
             if sand_cord_rn.y > get_max_y(whole_sorted_grid):
                 end = True
                 break
+            sand_index += 1
     return whole_sorted_grid
+
+
+def print_out_map_to_terminal(stdscr, whole_sorted_grid, sand_cord_list):
+    rows = print_out_map(whole_sorted_grid, sand_cord_list)
+    stdscr.clear()
+    for row in rows:
+        stdscr.addstr(row + "\n")
+    stdscr.refresh()
 
 
 def get_part_one_answer(stdscr, puzzle_input):
