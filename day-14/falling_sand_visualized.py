@@ -81,6 +81,23 @@ def delete_duplicates(rock_list: List[Cords]):
     return list(map(to_cords, stringified))
 
 
+def delete_unreachable_cords(usable_coordinates: List[Cords], for_visualization: List[Cords]):
+    good_cords = []
+    for usable_cord in usable_coordinates:
+        needed_cord = True
+        if get_coordinate_material(for_visualization, x=usable_cord.x, y=usable_cord.y-1) is not Material.AIR:
+            if get_coordinate_material(for_visualization, x=usable_cord.x-1, y=usable_cord.y) is not Material.AIR and \
+               get_coordinate_material(for_visualization, x=usable_cord.x+1, y=usable_cord.y) is not Material.AIR:
+                if get_coordinate_material(for_visualization, x=usable_cord.x-1, y=usable_cord.y-1) is not Material.AIR and \
+                   get_coordinate_material(for_visualization, x=usable_cord.x+1, y=usable_cord.y-1) is not Material.AIR:
+                    if get_coordinate_material(for_visualization, x=usable_cord.x-2, y=usable_cord.y) is not Material.AIR and \
+                       get_coordinate_material(for_visualization, x=usable_cord.x+2, y=usable_cord.y) is not Material.AIR:
+                        needed_cord = False
+        if needed_cord:
+            good_cords.append(usable_cord)
+    return good_cords
+
+
 def print_out_map(sorted_grid: List[Cords], sand_cords_list: List[Cords]):
     all_rows = []
     min_x = get_min_x(sorted_grid)
@@ -133,7 +150,8 @@ def add_falling_sand(stdscr, whole_sorted_grid):
     end = False
     falling_sand_list = []
     iteration = 0
-    # sand_cord_rn = Cords(x=500, y=0, material=Material.SAND)
+    coordinates_for_sand = whole_sorted_grid
+    coordinates_for_sand = delete_unreachable_cords(coordinates_for_sand, whole_sorted_grid)
     while not end:
         iteration += 1
         print_out_map_to_terminal(stdscr, whole_sorted_grid, falling_sand_list)
@@ -141,24 +159,28 @@ def add_falling_sand(stdscr, whole_sorted_grid):
         if iteration % 4 == 0:
             falling_sand_list.append(Cords(x=500, y=0, material=Material.SAND))
 
+        if iteration % 50 == 0:
+            coordinates_for_sand = delete_unreachable_cords(coordinates_for_sand, whole_sorted_grid)
+
         sand_index = 0
         while sand_index < len(falling_sand_list):
             sand_cord_rn = falling_sand_list[sand_index]
-            material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x, y=sand_cord_rn.y + 1)
+            material_under = get_coordinate_material(coordinates_for_sand, x=sand_cord_rn.x, y=sand_cord_rn.y + 1)
             if material_under is Material.AIR:
                 sand_cord_rn.y = sand_cord_rn.y + 1
             elif material_under is Material.ROCK or material_under is Material.SAND:
-                material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x - 1, y=sand_cord_rn.y + 1)
+                material_under = get_coordinate_material(coordinates_for_sand, x=sand_cord_rn.x - 1, y=sand_cord_rn.y + 1)
                 if material_under is Material.AIR:
                     sand_cord_rn.x = sand_cord_rn.x - 1
                     sand_cord_rn.y = sand_cord_rn.y + 1
                 elif material_under is Material.ROCK or material_under is Material.SAND:
-                    material_under = get_coordinate_material(whole_sorted_grid, x=sand_cord_rn.x + 1, y=sand_cord_rn.y + 1)
+                    material_under = get_coordinate_material(coordinates_for_sand, x=sand_cord_rn.x + 1, y=sand_cord_rn.y + 1)
                     if material_under is Material.AIR:
                         sand_cord_rn.x = sand_cord_rn.x + 1
                         sand_cord_rn.y = sand_cord_rn.y + 1
                     elif material_under is Material.ROCK or material_under is Material.SAND:
                         whole_sorted_grid.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
+                        coordinates_for_sand.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
                         falling_sand_list.pop(sand_index)
                         sand_index -= 1
                         break
