@@ -152,14 +152,15 @@ def add_falling_sand(stdscr, whole_sorted_grid):
     iteration = 0
     coordinates_for_sand = whole_sorted_grid
     coordinates_for_sand = delete_unreachable_cords(coordinates_for_sand, whole_sorted_grid)
+    min_x = get_min_x(whole_sorted_grid)
     while not end:
         iteration += 1
-        print_out_map_to_terminal(stdscr, whole_sorted_grid, falling_sand_list)
+        remove_old_falling_sand(stdscr, falling_sand_list, min_x)
 
-        if iteration % 4 == 0:
+        if iteration % 2 == 0:
             falling_sand_list.append(Cords(x=500, y=0, material=Material.SAND))
 
-        if iteration % 50 == 0:
+        if iteration % 200 == 0:
             coordinates_for_sand = delete_unreachable_cords(coordinates_for_sand, whole_sorted_grid)
 
         sand_index = 0
@@ -181,6 +182,8 @@ def add_falling_sand(stdscr, whole_sorted_grid):
                     elif material_under is Material.ROCK or material_under is Material.SAND:
                         whole_sorted_grid.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
                         coordinates_for_sand.append(Cords(x=sand_cord_rn.x, y=sand_cord_rn.y, material=Material.SAND))
+                        stdscr.addstr(sand_cord_rn.y, sand_cord_rn.x - min_x, "o")
+                        stdscr.refresh()
                         falling_sand_list.pop(sand_index)
                         sand_index -= 1
                         break
@@ -188,7 +191,21 @@ def add_falling_sand(stdscr, whole_sorted_grid):
                 end = True
                 break
             sand_index += 1
+        print_out_falling_sand(stdscr, falling_sand_list, min_x)
+        time.sleep(0.005)
     return whole_sorted_grid
+
+
+def remove_old_falling_sand(stdscr, previous_falling_sand_list, min_x):
+    for cord in previous_falling_sand_list:
+        stdscr.addstr(cord.y, cord.x - min_x, ".")
+    stdscr.refresh()
+
+
+def print_out_falling_sand(stdscr, falling_sand_list: List[Cords], min_x):
+    for cord in falling_sand_list:
+        stdscr.addstr(cord.y, cord.x - min_x, "o")
+    stdscr.refresh()
 
 
 def print_out_map_to_terminal(stdscr, whole_sorted_grid, sand_cord_list):
@@ -213,6 +230,8 @@ def get_part_one_answer(stdscr, puzzle_input):
 def main(stdscr):
     puzzle_input = open("puzzle_input.txt", "r", encoding="utf8").readlines()
     whole_sorted_grid = get_rock_points_list(puzzle_input)
+    print_out_map_to_terminal(stdscr, whole_sorted_grid, [])
+
     stdscr.refresh()
     add_falling_sand(stdscr, whole_sorted_grid)
     stdscr.getch()
