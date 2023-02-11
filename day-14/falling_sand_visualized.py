@@ -187,7 +187,6 @@ def add_falling_sand(stdscr, whole_sorted_grid):
                         falling_sand_list.pop(sand_index)
                         sand_index -= 1
                         break
-
             if sand_cord_rn.y > get_max_y(whole_sorted_grid):
                 end = True
                 break
@@ -207,8 +206,6 @@ def print_out_falling_sand(stdscr, falling_sand_list: List[Cords], min_x):
     for cord in falling_sand_list:
         stdscr.addstr(cord.y, cord.x - min_x, "o")
     stdscr.refresh()
-
-
 
 
 def print_out_map_to_terminal(stdscr, whole_sorted_grid, sand_cord_list):
@@ -234,6 +231,7 @@ def main(stdscr):
     puzzle_input = open("puzzle_input.txt", "r", encoding="utf8").readlines()
     whole_sorted_grid = get_rock_points_list(puzzle_input)
     print_out_map_to_terminal(stdscr, whole_sorted_grid, [])
+
     stdscr.refresh()
     add_falling_sand(stdscr, whole_sorted_grid)
     stdscr.getch()
